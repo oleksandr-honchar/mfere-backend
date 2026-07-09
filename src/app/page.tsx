@@ -3,14 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Input } from "@/components/ui/input";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 type Company = {
   companyId: number;
@@ -23,9 +16,9 @@ export default function Home() {
   const [companies, setCompanies] = useState<Company[]>([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // debounce 300ms — не шукаємо в БД на кожне натискання клавіші
     const timeout = setTimeout(() => {
       setLoading(true);
       const url = search
@@ -33,9 +26,21 @@ export default function Home() {
         : `/api/companies?limit=200`;
 
       fetch(url)
-        .then((res) => res.json())
+        .then(async (res) => {
+          if (!res.ok) {
+            const errorText = await res.text();
+            throw new Error(`Server error: ${res.status} - ${errorText}`);
+          }
+          return res.json();
+        })
         .then((json) => {
           setCompanies(json.data);
+          setLoading(false);
+          setError(null); // Очищаємо помилку при успіху
+        })
+        .catch((err) => {
+          console.error("Fetch failed:", err);
+          setError(err.message);
           setLoading(false);
         });
     }, 300);
@@ -43,12 +48,13 @@ export default function Home() {
     return () => clearTimeout(timeout);
   }, [search]);
 
+  // Ранні return'и мають бути ТУТ, після useEffect
+  if (error) return <main className="max-w-4xl mx-auto p-8 font-mono text-red-500">Помилка: {error}</main>;
+
   return (
-    <main className="max-w-4xl mx-auto p-8">
+    <main className="max-w-4xl mx-auto p-8 font-mono">
       <h1 className="text-2xl font-semibold mb-1">MFERE — Factor Dataset</h1>
-      <p className="text-sm text-muted-foreground mb-6">
-        S&amp;P 500 equity factors, 2025–2026 slice
-      </p>
+      <p className="text-sm text-muted-foreground mb-6">S&P 500 equity factors, 2025–2026 slice</p>
 
       <Input
         placeholder="Пошук за тікером або назвою..."
@@ -72,15 +78,12 @@ export default function Home() {
             {companies.map((c) => (
               <TableRow key={c.companyId}>
                 <TableCell className="font-mono">
-                  <Link
-                    href={`/companies/${c.ticker}`}
-                    className="font-mono text-blue-600 hover:underline"
-                  >
+                  <Link href={`/companies/${c.ticker}/factors`} className="text-blue-600 hover:underline">
                     {c.ticker}
                   </Link>
                 </TableCell>
-                <TableCell className="font-mono">{c.companyName}</TableCell>
-                <TableCell className="font-mono">{c.gicsSector ?? "—"}</TableCell>
+                <TableCell>{c.companyName}</TableCell>
+                <TableCell>{c.gicsSector ?? "—"}</TableCell>
               </TableRow>
             ))}
           </TableBody>

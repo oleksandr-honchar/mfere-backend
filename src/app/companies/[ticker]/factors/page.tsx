@@ -76,12 +76,10 @@ export default function CompanyPage() {
   };
 
   return (
-    <main className="max-w-full mx-auto p-8">
-      <h1 className="text-2xl font-mono font-semibold mb-1">{result.ticker}</h1>
+    <>
       <p className="text-sm font-mono text-muted-foreground mb-6">{result.company_name}</p>
 
-      {/* Горизонтальний скрол — 47 колонок в один екран не влізуть */}
-      <div className="overflow-x-auto">
+      <div className="w-full overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>
@@ -129,6 +127,6 @@ export default function CompanyPage() {
           Старіші
         </Button>
       </div>
-    </main>
+    </>
   );
 }
